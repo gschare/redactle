@@ -29,12 +29,13 @@ class Game:
         self.article = Article(page)
         self.page = Page(self.article.soup, self.dictionary)
         self.answer = { k.lower():False for k in self.article.title.split(' ') }
+        print(self.article.title, file=sys.stderr, flush=True)
         self.unguessed = self.page.words
 
     def random_article(self, seed=None):
         response = requests.get("https://en.wikipedia.org/wiki/Special:Random")
         self.set_article(response.url.split('/')[-1])
-        self.set_article("Babylonia")
+        #self.set_article("Operating_system")
 
     def guess(self, word):
         word = word.lower()

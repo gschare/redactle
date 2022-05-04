@@ -105,7 +105,6 @@ def tag_words(soup, dictionary):
                     word_tag['class'] = 'nonword'
                     word_tag.string = s[match.start():match.end()]
                     tag.append(word_tag)
-            print(tag, file=sys.stderr, flush=True)
             elt.replace_with(tag)
 
     return soup, words
