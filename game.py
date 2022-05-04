@@ -3,6 +3,7 @@ import regex
 from article import Article
 from page import Page
 import sys
+import requests
 
 DEFAULT_DICTIONARY = "defaultwords.txt"
 
@@ -27,12 +28,12 @@ class Game:
     def set_article(self, page):
         self.article = Article(page)
         self.page = Page(self.article.soup, self.dictionary)
-        self.answer = { k:False for k in self.article.title.split(' ') }
+        self.answer = { k.lower():False for k in self.article.title.split(' ') }
         self.unguessed = self.page.words
-        print(self.answer, file=sys.stderr, flush=True)
 
     def random_article(self, seed=None):
-        self.set_article("Forwarder")
+        response = requests.get("https://en.wikipedia.org/wiki/Special:Random")
+        self.set_article(response.url.split('/')[-1])
 
     def guess(self, word):
         word = word.lower()

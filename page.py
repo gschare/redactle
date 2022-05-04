@@ -24,7 +24,7 @@ class Page:
         pass
 
     def __repr__(self):
-        return self.soup.prettify()
+        return str(self.soup)
 
 def tag_words(soup, dictionary):
     # tag every word with span and a class saying it's a word
@@ -52,7 +52,11 @@ def tag_words(soup, dictionary):
                     word_tag.string = word
                     tag.append(word_tag)
                 else:
-                    tag.append(s[match.start():match.end()])
+                    word_tag = soup.new_tag('span')
+                    word_tag['class'] = 'nonword'
+                    word_tag.string = s[match.start():match.end()]
+                    tag.append(word_tag)
+            print(tag, file=sys.stderr, flush=True)
             elt.replace_with(tag)
 
     return soup, words
@@ -114,6 +118,11 @@ def make_guesses(soup):
 
 def style(soup, guessed, unguessed):
     styles = []
+    styles.append("""
+        span {
+            background-color: transparent;
+            color: black;
+        }""")
     for word in unguessed:
         styles.append("""
         span.word-"""+word+""" {
@@ -129,6 +138,10 @@ def style(soup, guessed, unguessed):
         }
         """)
     styles.append("""
+        span.nonword {
+            background-color: transparent;
+            color: black;
+        }
         span.default-word {
             background-color: transparent;
             color: black;

@@ -41,7 +41,9 @@ def get_html(page_name):
 
 def strip(soup):
     # remove disambiguation
-    soup.find('div', {'class':'hatnote'}).extract()
+    disamb = soup.find('div', {'class':'hatnote'})
+    if disamb:
+        disamb.extract()
 
     # remove styles
     for elt in soup.find_all('style'):
