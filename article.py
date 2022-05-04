@@ -11,7 +11,7 @@ class Article:
         return str(self.soup)
 
 def process_html(title, raw_html):
-    raw_html = '<div id="wikiframe">' + raw_html + '</div>'
+    raw_html = '<head></head><body><div id="wikiframe">' + raw_html + '</div></body>'
     soup = BeautifulSoup(raw_html, 'html.parser')
 
     # Remove the unwanted HTML elements.
@@ -43,8 +43,15 @@ def strip(soup):
     # remove disambiguation
     soup.find('div', {'class':'hatnote'}).extract()
 
+    # remove styles
+    for elt in soup.find_all('style'):
+        elt.extract()
+    # but add our own
+    style_tag = soup.new_tag('style')
+    soup.head.append(style_tag)
+
     # remove comments
-    for elt in soup(text=lambda txt: isinstance(text, Comment)):
+    for elt in soup(text=lambda txt: isinstance(txt, Comment)):
         elt.extract()
 
     # remove hyperlinks but keep contents
@@ -79,11 +86,13 @@ def strip(soup):
     for elt in soup.find_all('ol', {'class':'references'}):
         elt.extract()
     refs = soup.find(id='References')
-    refs.extract()
+    if refs:
+        refs.extract()
 
     # remove table of contents
     toc = soup.find(id='toc')
-    toc.extract()
+    if toc:
+        toc.extract()
 
     return soup
 

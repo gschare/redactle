@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import regex
 from article import Article
 from page import Page
+import sys
 
 DEFAULT_DICTIONARY = "defaultwords.txt"
 
@@ -9,7 +10,7 @@ def load_dictionary(filepath):
     dictionary = set()
     with open(filepath, 'r') as f:
         for line in f.readlines():
-            dictionary.add(line)
+            dictionary.add(line.rstrip())
     return dictionary
 
 class Game:
@@ -28,13 +29,13 @@ class Game:
         self.page = Page(self.article.soup, self.dictionary)
         self.answer = { k:False for k in self.article.title.split(' ') }
         self.unguessed = self.page.words
+        print(self.answer, file=sys.stderr, flush=True)
 
     def random_article(self, seed=None):
-        self.set_article("Machine_learning")
+        self.set_article("Forwarder")
 
     def guess(self, word):
         word = word.lower()
-        import sys
         print(word, file=sys.stderr, flush=True)
         if regex.match(r'.*[\s].*', word):
             return
@@ -52,8 +53,14 @@ class Game:
             # then remove it from unguessed, add it to guessed
             self.guessed[word] = self.unguessed[word]
             del self.unguessed[word]
+
+            if word in self.answer:
+                self.answer[word] = True
+            if all([v for k,v in self.answer.items()]):
+                self.win()
+                return
             # update the page
-            self.page.update(word)
+            self.page.update(list(self.guessed.keys()), list(self.unguessed.keys()))
             self.highlight(word)
 
     def highlight(self, word):
@@ -62,5 +69,7 @@ class Game:
     def display(self):
         return str(self.page)
 
-    def play(self):
-        pass
+    def win(self):
+        self.guessed.update(self.unguessed)
+        self.unguessed = {}
+        self.page.update(list(self.guessed.keys()), list(self.unguessed.keys()))

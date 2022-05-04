@@ -1,25 +1,30 @@
 import regex
+import sys
 from bs4 import BeautifulSoup, NavigableString
 
 class Page:
     def __init__(self, soup, dictionary):
-        self.soup, self.words = tag_words(make_page(soup), dictionary)
+        self.soup = make_page(soup)
+        self.soup, self.words = tag_words(self.soup, dictionary)
 
-    def update(self, word):
-        self.update_guesses(word)
-        self.update_wikipage(word)
+        self.soup = style(self.soup, [], list(self.words.keys()))
+
+    def update(self, guessed, unguessed):
+        self.update_guesses(guessed)
+        self.update_wikipage(guessed, unguessed)
 
     def update_guesses(self, word):
         pass
 
-    def update_wikipage(self, word):
-        pass
+    def update_wikipage(self, guessed, unguessed):
+        self.soup = style(self.soup, guessed, unguessed)
 
-    def highlight(self):
+    def highlight(self, word):
+        #self.soup.head.style
         pass
 
     def __repr__(self):
-        return str(self.soup)
+        return self.soup.prettify()
 
 def tag_words(soup, dictionary):
     # tag every word with span and a class saying it's a word
@@ -27,20 +32,30 @@ def tag_words(soup, dictionary):
     # updating simply by changing the relevant CSS rule.
     # also a tag for whether it's in the dictionary.
     # keep a log of each one
-    # i have no idea if this will work
-    words_ = {}
-    # also make all the words in the dict lower
+    words = {}
 
-    for elt in soup.find(id='wikiframe').descendants:
+    for elt in list(soup.html.find('div', id='wikiframe').descendants):
         if isinstance(elt, NavigableString):
-            parts = regex.findall(r"[\w']+|[^\w\s]", str(elt), regex.UNICODE)
-            for word in parts:
-                word_tag = soup.new_tag('span')
-                word_tag['class'] = f'word word-{word}' + (' default-word' if word in dictionary else '')
-                word_tag.string = word
-                words
-            #elt.replace_with(
-    return soup, words_
+            s = str(elt)
+            matches = regex.finditer(r"([\w'])+|[^\w]", s, regex.UNICODE)
+            tag = soup.new_tag("span")
+            for match in matches:
+                if match.group(1) is not None:
+                    word = s[match.start():match.end()]
+                    word_lower = word.lower()
+                    if word_lower in words:
+                        words[word_lower] += 1
+                    else:
+                        words[word_lower] = 1
+                    word_tag = soup.new_tag('span')
+                    word_tag['class'] = f'word word-{word_lower}' + (' default-word' if word_lower in dictionary else '')
+                    word_tag.string = word
+                    tag.append(word_tag)
+                else:
+                    tag.append(s[match.start():match.end()])
+            elt.replace_with(tag)
+
+    return soup, words
 
 def make_page(soup):
     # Reframe the HTML content into a page with a scrolling box, a list of
@@ -77,14 +92,16 @@ def make_page(soup):
     main = soup.div.wrap(main_div)
     main.append(guesses_div)
     main.append(input_div)
+    main.wrap(soup.new_tag('html'))
 
-    return main.wrap(soup.new_tag('html'))
+    return soup
 
 def make_form(soup):
     form = soup.new_tag('form')
     form['method'] = 'POST'
     input_box = soup.new_tag('input')
     input_box['name'] = 'guess'
+    input_box['autofocus'] = 'true'
     submit = soup.new_tag('input')
     submit['type'] = 'submit'
     submit['style'] = 'display: none'
@@ -94,3 +111,28 @@ def make_form(soup):
 
 def make_guesses(soup):
     return ""
+
+def style(soup, guessed, unguessed):
+    styles = []
+    for word in unguessed:
+        styles.append("""
+        span.word-"""+word+""" {
+            background-color: black;
+            color: transparent;
+        }
+        """)
+    for word in guessed:
+        styles.append("""
+        span.word-"""+word+""" {
+            background-color: transparent;
+            color: black;
+        }
+        """)
+    styles.append("""
+        span.default-word {
+            background-color: transparent;
+            color: black;
+        }
+        """)
+    soup.head.style.string = "\n".join(styles)
+    return soup
