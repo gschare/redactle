@@ -34,6 +34,7 @@ class Game:
     def random_article(self, seed=None):
         response = requests.get("https://en.wikipedia.org/wiki/Special:Random")
         self.set_article(response.url.split('/')[-1])
+        self.set_article("Babylonia")
 
     def guess(self, word):
         word = word.lower()
@@ -43,6 +44,7 @@ class Game:
         #query = regex.compile(ur'(?fi)\L<opts>', opts=[word])
 
         if word in self.dictionary:
+            self.highlight(word)
             return
 
         if self.guessed.get(word) is not None:
@@ -58,11 +60,14 @@ class Game:
             if word in self.answer:
                 self.answer[word] = True
             if all([v for k,v in self.answer.items()]):
+                self.highlight(word)
+                self.page.update(word)
                 self.win()
                 return
             # update the page
-            self.page.update(list(self.guessed.keys()), list(self.unguessed.keys()))
             self.highlight(word)
+            self.page.update(word)
+        self.page.update_wikipage()
 
     def highlight(self, word):
         self.page.highlight(word)
@@ -71,6 +76,4 @@ class Game:
         return str(self.page)
 
     def win(self):
-        self.guessed.update(self.unguessed)
-        self.unguessed = {}
-        self.page.update(list(self.guessed.keys()), list(self.unguessed.keys()))
+        self.page.win()
