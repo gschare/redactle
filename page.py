@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup, NavigableString
 
 class Page:
     def __init__(self, soup, dictionary):
+        self.n_guesses = 0
         self.soup = make_page(soup)
         self.soup, self.words = tag_words(self.soup, dictionary)
 
@@ -11,7 +12,7 @@ class Page:
         self.update_wikipage()
 
     def update(self, guess):
-        self.update_guesses(guess)
+        self.make_guess(guess)
         self.uncover_word(guess)
         self.update_wikipage()
 
@@ -24,12 +25,18 @@ class Page:
         self.styles['words'][word] = """
             span.word-"""+word+""" {
                 background-color: transparent;
-                color: black;
+                color: a3a3a3;
             }
             """
 
-    def update_guesses(self, guess):
-        pass
+    def make_guess(self, guess):
+        self.n_guesses += 1
+        guess_col = self.soup.find('div', id='guesses').find('ul')
+        new_guess = self.soup.new_tag('li')
+        hits = self.words.get(guess) or 0
+        print(guess, self.words.get(guess), file=sys.stderr, flush=True)
+        new_guess.string = '#' + str(self.n_guesses) + ' | ' + guess + ' - ' + str(hits)
+        guess_col.insert(0, new_guess)
 
     def update_wikipage(self):
         defaults = "\n".join(self.styles['default'])
@@ -41,7 +48,8 @@ class Page:
         self.styles['highlights'] = {}
         self.styles['highlights'][word] = """
             span.word-"""+word+""" {
-                background-color: rgba(100, 60, 0, 0.5);
+                background-color: rgba(255, 200, 100, 0.9);
+                color: black;
             }"""
 
     def style(self, words):
@@ -49,24 +57,33 @@ class Page:
                    "highlights": {},
                    "words": {} }
         styles['default'].append("""
+            html {
+                background-color: #232323;
+                color: #a3a3a3;
+            }
+            body {
+                font-family: monospace;
+                font-size: 16;
+                line-height: 150%;
+            }
             span {
                 background-color: transparent;
-                color: black;
+                color: #a3a3a3;
             }
             span.nonword {
                 background-color: transparent;
-                color: black;
+                color: #a3a3a3;
             }
             span.default-word {
                 background-color: transparent;
-                color: black;
+                color: #a3a3a3;
             }
             """)
 
         for word in words:
             styles['words'][word] = """
             span.word-"""+word+""" {
-                background-color: black;
+                background-color: #989898;
                 color: transparent;
             }
             """
@@ -92,6 +109,7 @@ def tag_words(soup, dictionary):
                 if match.group(1) is not None:
                     word = s[match.start():match.end()]
                     word_lower = word.lower()
+                    # TODO: normalize the word
                     if word_lower in words:
                         words[word_lower] += 1
                     elif word_lower not in dictionary:
@@ -162,5 +180,6 @@ def make_form(soup):
     return form
 
 def make_guesses(soup):
-    return ""
+    lst = soup.new_tag('ul')
+    return lst
 
